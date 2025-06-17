@@ -7,11 +7,17 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import type { User } from "./types";
-import { supabase } from "./supabaseClient";
+import { supabase } from "./supabase";
+
+type AppUser = {
+  id: string;
+  email: string;
+  name: string;
+  favorites: string[];
+};
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   login: (
     email: string,
     password: string
@@ -22,49 +28,55 @@ interface AuthContextType {
     password: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  toggleFavorite: (brandId: string) => void;
+  toggleFavorite: (brandId: string) => Promise<void>;
   isFavorite: (brandId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users database for demo
-const mockUsers: User[] = [
-  {
-    id: "1",
-    email: "demo@example.com",
-    name: "Demo User",
-    favorites: ["6", "5"], // Patagonia and Apple as initial favorites
-  },
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch favorites from Supabase for the logged-in user
+  const fetchFavorites = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("favorites")
+      .select("esg_id")
+      .eq("user_id", userId);
+    if (error) return [];
+    return data.map((fav: { esg_id: string }) => fav.esg_id);
+  };
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem("user");
-    const savedUsers = localStorage.getItem("users");
+    let mounted = true;
 
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    // On mount, get the current session
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (mounted && data.session?.user) {
+        const { id, email, user_metadata } = data.session.user;
+        const favorites = await fetchFavorites(id);
+        setUser({
+          id,
+          email: email ?? "",
+          name: user_metadata?.name ?? "",
+          favorites,
+        });
+      }
+      setLoading(false);
+    });
 
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    }
-  }, []);
-
-  useEffect(() => {
+    // Listen for auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (_event, session) => {
         if (session?.user) {
+          const { id, email, user_metadata } = session.user;
+          const favorites = await fetchFavorites(id);
           setUser({
-            id: session.user.id,
-            email: session.user.email ?? "",
-            name: session.user.user_metadata?.name ?? "",
-            favorites: [],
+            id,
+            email: email ?? "",
+            name: user_metadata?.name ?? "",
+            favorites,
           });
         } else {
           setUser(null);
@@ -72,19 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // On mount, check for existing session
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email ?? "",
-          name: data.user.user_metadata?.name ?? "",
-          favorites: [],
-        });
-      }
-    });
-
     return () => {
+      mounted = false;
       listener?.subscription.unsubscribe();
     };
   }, []);
@@ -97,14 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    if (error) {
-      return { success: false, error: error.message };
+
+    if (error || !data.session?.user) {
+      return { success: false, error: error?.message || "Login failed" };
     }
+
+    const { id, email: userEmail, user_metadata } = data.session.user;
+    const favorites = await fetchFavorites(id);
+
     setUser({
-      id: data.user?.id ?? "",
-      email: data.user?.email ?? "",
-      name: data.user?.user_metadata?.name ?? "",
-      favorites: [], // You may want to fetch this from a profile table
+      id,
+      email: userEmail ?? "",
+      name: user_metadata?.name ?? "",
+      favorites,
     });
     return { success: true };
   };
@@ -125,23 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error: error?.message || "Signup failed" };
     }
 
-    // Insert into profiles table
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert([
-        {
-          id: data.user.id, // Must match auth.users id
-          name: name,
-          email: email,
-        },
-      ]);
-    if (profileError) {
-      return { success: false, error: profileError.message };
-    }
-
     setUser({
       id: data.user.id,
-      email: data.user.email ?? "",
+      email: email,
       name: name,
       favorites: [],
     });
@@ -153,23 +145,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const toggleFavorite = (brandId: string) => {
+  // Toggle favorite (local only, no DB)
+  const toggleFavorite = async (brandId: string) => {
     if (!user) return;
 
-    const updatedUser = {
-      ...user,
-      favorites: user.favorites.includes(brandId)
-        ? user.favorites.filter((id) => id !== brandId)
-        : [...user.favorites, brandId],
-    };
+    const isFav = user.favorites.includes(brandId);
 
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+    if (isFav) {
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("esg_id", brandId);
 
-    // Update users array
-    const updatedUsers = users.map((u) => (u.id === user.id ? updatedUser : u));
-    setUsers(updatedUsers);
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
+      if (error) {
+        console.error("Failed to remove favorite:", error.message);
+        return;
+      }
+
+      setUser({
+        ...user,
+        favorites: user.favorites.filter((id) => id !== brandId),
+      });
+    } else {
+      const { error } = await supabase.from("favorites").insert([
+        {
+          user_id: user.id,
+          esg_id: brandId,
+        },
+      ]);
+
+      if (error) {
+        console.error("Failed to add favorite:", error.message);
+        return;
+      }
+
+      setUser({
+        ...user,
+        favorites: [...user.favorites, brandId],
+      });
+    }
   };
 
   const isFavorite = (brandId: string): boolean => {
