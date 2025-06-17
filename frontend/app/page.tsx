@@ -1,78 +1,134 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { mockESGData, type ESGData } from "@/lib/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Search, ShoppingBag, LogIn, LogOut, User, Heart, UserPlus } from "lucide-react"
-import { CompanyCard } from "@/components/company-card"
-import { CompanyDetail } from "@/components/company-detail"
-import { LoginModal } from "@/components/login-modal"
-import { SignupModal } from "@/components/signup-modal"
-import { useAuth } from "@/lib/auth-context"
+import { useState, useEffect } from "react";
+import { supabase, type ESGData } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Search,
+  ShoppingBag,
+  LogIn,
+  LogOut,
+  User,
+  Heart,
+  UserPlus,
+} from "lucide-react";
+import { CompanyCard } from "@/components/company-card";
+import { CompanyDetail } from "@/components/company-detail";
+import { LoginModal } from "@/components/login-modal";
+import { SignupModal } from "@/components/signup-modal";
+import { useAuth } from "@/lib/auth-context";
 
 export default function EthicalBrandGuide() {
-  const [brandData] = useState<ESGData[]>(mockESGData)
-  const [filteredData, setFilteredData] = useState<ESGData[]>(mockESGData)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [industryFilter, setIndustryFilter] = useState("all")
-  const [sortBy, setSortBy] = useState("overall_score")
-  const [selectedBrand, setSelectedBrand] = useState<ESGData | null>(null)
-  const [showLoginModal, setShowLoginModal] = useState(false)
-  const [showSignupModal, setShowSignupModal] = useState(false)
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
-  const { user, logout, isFavorite } = useAuth()
+  const [brandData, setBrandData] = useState<ESGData[]>([]);
+  const [filteredData, setFilteredData] = useState<ESGData[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("overall_score");
+  const [selectedBrand, setSelectedBrand] = useState<ESGData | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user, logout, isFavorite } = useAuth();
+
+  // Fetch ESG data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase.from("esg_data").select("*");
+      if (error) {
+        setError("Failed to load ESG data.");
+        setBrandData([]);
+      } else {
+        setBrandData(data as ESGData[]);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
-    filterAndSortData()
-  }, [searchTerm, industryFilter, sortBy, showFavoritesOnly])
+    filterAndSortData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandData, searchTerm, industryFilter, sortBy, showFavoritesOnly]);
 
   const filterAndSortData = () => {
     const filtered = brandData.filter((brand) => {
       const matchesSearch =
-        brand.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.products.some((product) => product.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesIndustry = industryFilter === "all" || brand.industry === industryFilter
-      const matchesFavorites = !showFavoritesOnly || isFavorite(brand.id)
-      return matchesSearch && matchesIndustry && matchesFavorites
-    })
+        (brand.brand_name?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        ) ||
+        (brand.company_name?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        ) ||
+        (brand.products || []).some((product) =>
+          (product?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+        );
+      const matchesIndustry =
+        industryFilter === "all" || brand.industry === industryFilter;
+      const matchesFavorites = !showFavoritesOnly || isFavorite(brand.id);
+      return matchesSearch && matchesIndustry && matchesFavorites;
+    });
 
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "environmental_score":
-          return b.environmental_score - a.environmental_score
+          return (b.environmental_score || 0) - (a.environmental_score || 0);
         case "social_score":
-          return b.social_score - a.social_score
+          return (b.social_score || 0) - (a.social_score || 0);
         case "governance_score":
-          return b.governance_score - a.governance_score
+          return (b.governance_score || 0) - (a.governance_score || 0);
         case "brand_name":
-          return a.brand_name.localeCompare(b.brand_name)
+          return (a.brand_name || "").localeCompare(b.brand_name || "");
         default:
-          return b.overall_score - a.overall_score
+          return (b.overall_score || 0) - (a.overall_score || 0);
       }
-    })
+    });
 
-    setFilteredData(filtered)
-  }
+    setFilteredData(filtered);
+  };
 
   const handleSwitchToSignup = () => {
-    setShowLoginModal(false)
-    setShowSignupModal(true)
-  }
+    setShowLoginModal(false);
+    setShowSignupModal(true);
+  };
 
   const handleSwitchToLogin = () => {
-    setShowSignupModal(false)
-    setShowLoginModal(true)
-  }
+    setShowSignupModal(false);
+    setShowLoginModal(true);
+  };
 
-  const industries = [...new Set(brandData.map((brand) => brand.industry))]
-  const favoriteCount = brandData.filter((brand) => isFavorite(brand.id)).length
+  const industries = [
+    ...new Set(
+      brandData.map((brand) => brand.industry).filter((i) => i && i !== "")
+    ),
+  ] as string[];
+  const favoriteCount = brandData.filter((brand) =>
+    isFavorite(brand.id)
+  ).length;
 
   if (selectedBrand) {
-    return <CompanyDetail company={selectedBrand} onBack={() => setSelectedBrand(null)} />
+    // Ensure brand_name is always a string for CompanyDetail
+    return (
+      <CompanyDetail
+        company={{
+          ...selectedBrand,
+          brand_name: selectedBrand.brand_name ?? "",
+        }}
+        onBack={() => setSelectedBrand(null)}
+      />
+    );
   }
 
   return (
@@ -83,7 +139,9 @@ export default function EthicalBrandGuide() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <ShoppingBag className="h-8 w-8 text-green-600 mr-3" />
-              <h1 className="text-4xl font-bold text-gray-900">Ethical Brand Guide</h1>
+              <h1 className="text-4xl font-bold text-gray-900">
+                Ethical Brand Guide
+              </h1>
             </div>
             <div className="flex items-center gap-3">
               {user ? (
@@ -92,8 +150,16 @@ export default function EthicalBrandGuide() {
                     <User className="h-4 w-4" />
                     <span>Welcome, {user.name}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
-                    <Heart className={`h-4 w-4 mr-2 ${showFavoritesOnly ? "fill-red-500 text-red-500" : ""}`} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  >
+                    <Heart
+                      className={`h-4 w-4 mr-2 ${
+                        showFavoritesOnly ? "fill-red-500 text-red-500" : ""
+                      }`}
+                    />
                     Favorites ({favoriteCount})
                   </Button>
                   <Button variant="outline" size="sm" onClick={logout}>
@@ -103,7 +169,10 @@ export default function EthicalBrandGuide() {
                 </>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => setShowSignupModal(true)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSignupModal(true)}
+                  >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Sign Up
                   </Button>
@@ -116,8 +185,8 @@ export default function EthicalBrandGuide() {
             </div>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto text-center">
-            Discover the environmental, social, and governance practices of your favorite brands. Make informed choices
-            that align with your values.
+            Discover the environmental, social, and governance practices of your
+            favorite brands. Make informed choices that align with your values.
           </p>
         </div>
 
@@ -127,7 +196,11 @@ export default function EthicalBrandGuide() {
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
               Find Brands
-              {showFavoritesOnly && <span className="text-sm font-normal text-gray-500">(Showing favorites only)</span>}
+              {showFavoritesOnly && (
+                <span className="text-sm font-normal text-gray-500">
+                  (Showing favorites only)
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -159,10 +232,18 @@ export default function EthicalBrandGuide() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="overall_score">Overall Ethics Score</SelectItem>
-                  <SelectItem value="environmental_score">Environmental Impact</SelectItem>
-                  <SelectItem value="social_score">Social Responsibility</SelectItem>
-                  <SelectItem value="governance_score">Corporate Governance</SelectItem>
+                  <SelectItem value="overall_score">
+                    Overall Ethics Score
+                  </SelectItem>
+                  <SelectItem value="environmental_score">
+                    Environmental Impact
+                  </SelectItem>
+                  <SelectItem value="social_score">
+                    Social Responsibility
+                  </SelectItem>
+                  <SelectItem value="governance_score">
+                    Corporate Governance
+                  </SelectItem>
                   <SelectItem value="brand_name">Brand Name</SelectItem>
                 </SelectContent>
               </Select>
@@ -174,20 +255,50 @@ export default function EthicalBrandGuide() {
         </Card>
 
         {/* Brand Cards */}
-        <div className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredData.map((brand) => (
-              <CompanyCard key={brand.id} company={brand} onClick={() => setSelectedBrand(brand)} />
-            ))}
+        {loading ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4 animate-pulse" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Loading brands...
+              </h3>
+              <p className="text-gray-600">
+                Please wait while we fetch the latest ESG data.
+              </p>
+            </CardContent>
+          </Card>
+        ) : error ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <ShoppingBag className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Error loading brands
+              </h3>
+              <p className="text-gray-600">{error}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredData.map((brand) => (
+                <CompanyCard
+                  key={brand.id}
+                  company={brand}
+                  onClick={() => setSelectedBrand(brand)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {filteredData.length === 0 && (
+        {filteredData.length === 0 && !loading && !error && (
           <Card className="text-center py-12">
             <CardContent>
               <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {showFavoritesOnly ? "No favorite brands found" : "No brands found"}
+                {showFavoritesOnly
+                  ? "No favorite brands found"
+                  : "No brands found"}
               </h3>
               <p className="text-gray-600">
                 {showFavoritesOnly
@@ -200,8 +311,14 @@ export default function EthicalBrandGuide() {
 
         {/* Footer Info */}
         <div className="mt-12 text-center text-sm text-gray-500">
-          <p>ESG scores are based on Environmental, Social, and Governance practices.</p>
-          <p className="mt-1">Higher scores indicate more ethical and sustainable business practices.</p>
+          <p>
+            ESG scores are based on Environmental, Social, and Governance
+            practices.
+          </p>
+          <p className="mt-1">
+            Higher scores indicate more ethical and sustainable business
+            practices.
+          </p>
         </div>
       </div>
 
@@ -216,5 +333,5 @@ export default function EthicalBrandGuide() {
         onSwitchToLogin={handleSwitchToLogin}
       />
     </div>
-  )
+  );
 }

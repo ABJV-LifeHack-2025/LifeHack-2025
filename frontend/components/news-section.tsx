@@ -1,59 +1,85 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Newspaper, ExternalLink, Calendar, Leaf, Users, Shield } from "lucide-react"
-import { mockNewsData, type NewsItem, type ESGData } from "@/lib/types"
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Newspaper,
+  ExternalLink,
+  Calendar,
+  Leaf,
+  Users,
+  Shield,
+} from "lucide-react";
+import { supabase, type News } from "@/lib/supabase";
+import type { ESGData } from "@/lib/supabase";
 
 interface NewsSectionProps {
-  company: ESGData
+  company: ESGData;
 }
 
 export function NewsSection({ company }: NewsSectionProps) {
-  const [selectedCategory, setSelectedCategory] = useState<"all" | "environmental" | "social" | "governance">("all")
+  const [selectedCategory, setSelectedCategory] = useState<
+    "all" | "environmental" | "social" | "governance"
+  >("all");
+  const [news, setNews] = useState<News[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const companyNews = mockNewsData[company.id] || []
+  useEffect(() => {
+    const fetchNews = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("news")
+        .select("*")
+        .eq("esg_id", company.id)
+        .order("date", { ascending: false });
+      setNews(data || []);
+      setLoading(false);
+    };
+    fetchNews();
+  }, [company.id]);
 
   const filteredNews =
-    selectedCategory === "all" ? companyNews : companyNews.filter((news) => news.category === selectedCategory)
+    selectedCategory === "all"
+      ? news
+      : news.filter((n) => n.category === selectedCategory);
 
-  const getCategoryIcon = (category: NewsItem["category"]) => {
+  const getCategoryIcon = (category: News["category"]) => {
     switch (category) {
       case "environmental":
-        return <Leaf className="h-4 w-4 text-green-600" />
+        return <Leaf className="h-4 w-4 text-green-600" />;
       case "social":
-        return <Users className="h-4 w-4 text-blue-600" />
+        return <Users className="h-4 w-4 text-blue-600" />;
       case "governance":
-        return <Shield className="h-4 w-4 text-purple-600" />
+        return <Shield className="h-4 w-4 text-purple-600" />;
     }
-  }
+  };
 
-  const getCategoryColor = (category: NewsItem["category"]) => {
+  const getCategoryColor = (category: News["category"]) => {
     switch (category) {
       case "environmental":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "social":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "governance":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-100 text-purple-800";
     }
-  }
+  };
 
-  const getCategoryLabel = (category: NewsItem["category"]) => {
+  const getCategoryLabel = (category: News["category"]) => {
     switch (category) {
       case "environmental":
-        return "Environmental"
+        return "Environmental";
       case "social":
-        return "Social"
+        return "Social";
       case "governance":
-        return "Governance"
+        return "Governance";
     }
-  }
+  };
 
-  if (companyNews.length === 0) {
+  if (loading) {
     return (
       <Card>
         <CardHeader>
@@ -65,11 +91,35 @@ export function NewsSection({ company }: NewsSectionProps) {
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>No recent news available for {company.brand_name}</p>
+            <p>
+              Loading news for {company.brand_name || company.company_name}...
+            </p>
           </div>
         </CardContent>
       </Card>
-    )
+    );
+  }
+
+  if (news.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Newspaper className="h-5 w-5 mr-2" />
+            In the News
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-500">
+            <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>
+              No recent news available for{" "}
+              {company.brand_name || company.company_name}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -81,10 +131,16 @@ export function NewsSection({ company }: NewsSectionProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as any)}>
+        <Tabs
+          value={selectedCategory}
+          onValueChange={(value) => setSelectedCategory(value as any)}
+        >
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all">All News</TabsTrigger>
-            <TabsTrigger value="environmental" className="flex items-center gap-1">
+            <TabsTrigger
+              value="environmental"
+              className="flex items-center gap-1"
+            >
               <Leaf className="h-3 w-3" />
               Environmental
             </TabsTrigger>
@@ -106,29 +162,55 @@ export function NewsSection({ company }: NewsSectionProps) {
                 </div>
               ) : (
                 filteredNews.map((news) => (
-                  <Card key={news.id} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={news.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           {getCategoryIcon(news.category)}
-                          <Badge className={getCategoryColor(news.category)}>{getCategoryLabel(news.category)}</Badge>
+                          <Badge className={getCategoryColor(news.category)}>
+                            {getCategoryLabel(news.category)}
+                          </Badge>
                         </div>
                         <div className="flex items-center text-xs text-gray-500">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {new Date(news.date).toLocaleDateString()}
+                          {news.date
+                            ? new Date(news.date).toLocaleDateString()
+                            : "No date"}
                         </div>
                       </div>
 
-                      <h4 className="font-semibold text-gray-900 mb-2 leading-tight">{news.title}</h4>
+                      <h4 className="font-semibold text-gray-900 mb-2 leading-tight">
+                        {news.title}
+                      </h4>
 
-                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">{news.summary}</p>
+                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                        {news.summary}
+                      </p>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">Source: {news.source}</span>
-                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Read More
-                        </Button>
+                        <span className="text-xs text-gray-500">
+                          Source: {news.source || "Unknown"}
+                        </span>
+                        {news.url && (
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <a
+                              href={news.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Read More
+                            </a>
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -139,5 +221,5 @@ export function NewsSection({ company }: NewsSectionProps) {
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -3,7 +3,7 @@
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import type { ESGData } from "@/lib/types"
+import type { ESGData } from "@/lib/supabase" // <-- Use the type from your Supabase types
 
 interface ESGChartProps {
   data: ESGData[]
@@ -11,12 +11,12 @@ interface ESGChartProps {
 
 export function ESGChart({ data }: ESGChartProps) {
   const chartData = data.map((company) => ({
-    company: company.ticker,
+    company: company.ticker || company.company_name,
     fullName: company.company_name,
-    Environmental: company.environmental_score,
-    Social: company.social_score,
-    Governance: company.governance_score,
-    Overall: company.overall_score,
+    Environmental: company.environmental_score ?? 0,
+    Social: company.social_score ?? 0,
+    Governance: company.governance_score ?? 0,
+    Overall: company.overall_score ?? 0,
   }))
 
   return (
