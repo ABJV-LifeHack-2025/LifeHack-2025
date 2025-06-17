@@ -118,6 +118,28 @@ export default function EthicalBrandGuide() {
     isFavorite(brand.id)
   ).length;
 
+  const favoriteBrands = brandData.filter((brand) =>
+  isFavorite(brand.id)
+  );
+
+  const averageScore = (key: keyof ESGData): string => {
+    if (favoriteBrands.length === 0) return "N/A";
+    const total = favoriteBrands.reduce((sum, b) => sum + (b[key] || 0), 0);
+    return (total / favoriteBrands.length).toFixed(2);
+  };
+
+  const topCategory = (): string => {
+    if (favoriteBrands.length === 0) return "N/A";
+    const counts: Record<string, number> = {};
+    favoriteBrands.forEach((b) => {
+      if (b.industry) {
+        counts[b.industry] = (counts[b.industry] || 0) + 1;
+      }
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return sorted[0]?.[0] ?? "N/A";
+  };
+
   if (selectedBrand) {
     // Ensure brand_name is always a string for CompanyDetail
     return (
@@ -215,7 +237,7 @@ export default function EthicalBrandGuide() {
                 />
               </div>
               <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -228,7 +250,7 @@ export default function EthicalBrandGuide() {
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,6 +275,30 @@ export default function EthicalBrandGuide() {
             </div>
           </CardContent>
         </Card>
+
+{showFavoritesOnly && favoriteBrands.length > 0 && (
+  <Card className="mb-8 bg-green-50 border-green-200">
+    <CardHeader>
+      <CardTitle className="text-green-800">
+        Favorite Brand Insights
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-green-900">
+      <div>
+        <p className="text-sm text-green-700">Total Favorites</p>
+        <p className="text-2xl font-bold">{favoriteBrands.length}</p>
+      </div>
+      <div>
+        <p className="text-sm text-green-700">Top Industry</p>
+        <p className="text-2xl font-bold">{topCategory()}</p>
+      </div>
+      <div>
+        <p className="text-sm text-green-700">Avg. Ethics Score</p>
+        <p className="text-2xl font-bold">{averageScore("overall_score")}</p>
+      </div>
+    </CardContent>
+  </Card>
+)}
 
         {/* Brand Cards */}
         {loading ? (
