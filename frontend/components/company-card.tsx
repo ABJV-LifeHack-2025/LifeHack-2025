@@ -49,7 +49,6 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     toggleFavorite(company.id);
   };
