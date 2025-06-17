@@ -1,0 +1,220 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { mockESGData, type ESGData } from "@/lib/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Search, ShoppingBag, LogIn, LogOut, User, Heart, UserPlus } from "lucide-react"
+import { CompanyCard } from "@/components/company-card"
+import { CompanyDetail } from "@/components/company-detail"
+import { LoginModal } from "@/components/login-modal"
+import { SignupModal } from "@/components/signup-modal"
+import { useAuth } from "@/lib/auth-context"
+
+export default function EthicalBrandGuide() {
+  const [brandData] = useState<ESGData[]>(mockESGData)
+  const [filteredData, setFilteredData] = useState<ESGData[]>(mockESGData)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [industryFilter, setIndustryFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("overall_score")
+  const [selectedBrand, setSelectedBrand] = useState<ESGData | null>(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showSignupModal, setShowSignupModal] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const { user, logout, isFavorite } = useAuth()
+
+  useEffect(() => {
+    filterAndSortData()
+  }, [searchTerm, industryFilter, sortBy, showFavoritesOnly])
+
+  const filterAndSortData = () => {
+    const filtered = brandData.filter((brand) => {
+      const matchesSearch =
+        brand.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        brand.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        brand.products.some((product) => product.toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchesIndustry = industryFilter === "all" || brand.industry === industryFilter
+      const matchesFavorites = !showFavoritesOnly || isFavorite(brand.id)
+      return matchesSearch && matchesIndustry && matchesFavorites
+    })
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "environmental_score":
+          return b.environmental_score - a.environmental_score
+        case "social_score":
+          return b.social_score - a.social_score
+        case "governance_score":
+          return b.governance_score - a.governance_score
+        case "brand_name":
+          return a.brand_name.localeCompare(b.brand_name)
+        default:
+          return b.overall_score - a.overall_score
+      }
+    })
+
+    setFilteredData(filtered)
+  }
+
+  const handleSwitchToSignup = () => {
+    setShowLoginModal(false)
+    setShowSignupModal(true)
+  }
+
+  const handleSwitchToLogin = () => {
+    setShowSignupModal(false)
+    setShowLoginModal(true)
+  }
+
+  const industries = [...new Set(brandData.map((brand) => brand.industry))]
+  const favoriteCount = brandData.filter((brand) => isFavorite(brand.id)).length
+
+  if (selectedBrand) {
+    return <CompanyDetail company={selectedBrand} onBack={() => setSelectedBrand(null)} />
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <ShoppingBag className="h-8 w-8 text-green-600 mr-3" />
+              <h1 className="text-4xl font-bold text-gray-900">Ethical Brand Guide</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <User className="h-4 w-4" />
+                    <span>Welcome, {user.name}</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}>
+                    <Heart className={`h-4 w-4 mr-2 ${showFavoritesOnly ? "fill-red-500 text-red-500" : ""}`} />
+                    Favorites ({favoriteCount})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => setShowSignupModal(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Sign Up
+                  </Button>
+                  <Button onClick={() => setShowLoginModal(true)}>
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto text-center">
+            Discover the environmental, social, and governance practices of your favorite brands. Make informed choices
+            that align with your values.
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Find Brands
+              {showFavoritesOnly && <span className="text-sm font-normal text-gray-500">(Showing favorites only)</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search brands or products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {industries.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overall_score">Overall Ethics Score</SelectItem>
+                  <SelectItem value="environmental_score">Environmental Impact</SelectItem>
+                  <SelectItem value="social_score">Social Responsibility</SelectItem>
+                  <SelectItem value="governance_score">Corporate Governance</SelectItem>
+                  <SelectItem value="brand_name">Brand Name</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mt-4 text-sm text-gray-500">
+              Showing {filteredData.length} of {brandData.length} brands
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Brand Cards */}
+        <div className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredData.map((brand) => (
+              <CompanyCard key={brand.id} company={brand} onClick={() => setSelectedBrand(brand)} />
+            ))}
+          </div>
+        </div>
+
+        {filteredData.length === 0 && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {showFavoritesOnly ? "No favorite brands found" : "No brands found"}
+              </h3>
+              <p className="text-gray-600">
+                {showFavoritesOnly
+                  ? "Start adding brands to your favorites to see them here"
+                  : "Try adjusting your search or filter criteria"}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Footer Info */}
+        <div className="mt-12 text-center text-sm text-gray-500">
+          <p>ESG scores are based on Environmental, Social, and Governance practices.</p>
+          <p className="mt-1">Higher scores indicate more ethical and sustainable business practices.</p>
+        </div>
+      </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToSignup={handleSwitchToSignup}
+      />
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
+    </div>
+  )
+}
