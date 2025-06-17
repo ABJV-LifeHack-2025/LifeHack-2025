@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: #f9fafb;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .subtitle {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    
+    .toggle-section {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 15px;
+      color: #374151;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      background: #d1d5db;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-switch.active {
+      background: #16a34a;
+    }
+    
+    .toggle-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .toggle-switch.active .toggle-knob {
+      transform: translateX(20px);
+    }
+    
+    .toggle-description {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    
+    .stats {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 14px;
+    }
+    
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+    
+    .stat-label {
+      color: #6b7280;
+    }
+    
+    .stat-value {
+      font-weight: 600;
+      color: #111827;
+    }
+    
+    .status-active {
+      color: #16a34a;
+    }
+    
+    .status-disabled {
+      color: #ef4444;
+    }
+    
+    .brands-detected {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .brands-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    
+    .brand-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .brand-tag {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 12px;
+    }
+    
+    .footer-link {
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .footer-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">ESG</div>
+    <div>
+      <div class="title">Ethical Brand Guide</div>
+      <div class="subtitle">Shop with purpose</div>
+    </div>
+  </div>
+  
+  <div class="toggle-section">
+    <div class="toggle-label">
+      <span>Show ESG Scores</span>
+      <div class="toggle-switch active" id="toggleSwitch">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="toggle-description">
+      Display ethical scores and sustainability information while shopping online
+    </div>
+  </div>
+  
+  <div class="stats">
+    <div class="stats-title">Current Session</div>
+    <div class="stat-item">
+      <span class="stat-label">Brands detected</span>
+      <span class="stat-value" id="brandsDetected">3</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Current site</span>
+      <span class="stat-value" id="currentSite">amazon.com</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Extension status</span>
+      <span class="stat-value status-active" id="extensionStatus">Active</span>
+    </div>
+  </div>
+  
+  <div class="brands-detected">
+    <div class="brands-title">Brands Available</div>
+    <div class="brand-list">
+      <span class="brand-tag">Apple</span>
+      <span class="brand-tag">Nike</span>
+      <span class="brand-tag">Samsung</span>
+      <span class="brand-tag">Sony</span>
+      <span class="brand-tag">Microsoft</span>
+      <span class="brand-tag">Adidas</span>
+      <span class="brand-tag">Tesla</span>
+      <span class="brand-tag">Patagonia</span>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <a href="#" class="footer-link" id="openWebApp">Open Full Dashboard →</a>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

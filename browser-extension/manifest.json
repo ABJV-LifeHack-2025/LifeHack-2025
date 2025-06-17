@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Ethical Brand Guide - ESG Scores",
+  "version": "1.0.0",
+  "description": "See ESG scores for brands while shopping online",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "https://*.amazon.com/*",
+    "https://*.ebay.com/*",
+    "https://*.walmart.com/*",
+    "https://*.target.com/*",
+    "https://*.bestbuy.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.amazon.com/*",
+        "https://*.ebay.com/*",
+        "https://*.walmart.com/*",
+        "https://*.target.com/*",
+        "https://*.bestbuy.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+    "web_accessible_resources": [
+    {
+      "resources": ["supabase.js"],
+      "matches": [
+        "https://*.amazon.com/*",
+        "https://*.ebay.com/*",
+        "https://*.walmart.com/*",
+        "https://*.target.com/*",
+        "https://*.bestbuy.com/*"
+      ]      
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ethical Brand Guide"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
