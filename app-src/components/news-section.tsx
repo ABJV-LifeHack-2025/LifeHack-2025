@@ -161,7 +161,7 @@ export function NewsSection({ company }: NewsSectionProps) {
                   <p>No {selectedCategory} news available</p>
                 </div>
               ) : (
-                filteredNews.map((news) => (
+                filteredNews.slice(0, 3).map((news) => (
                   <Card
                     key={news.id}
                     className="hover:shadow-md transition-shadow"
