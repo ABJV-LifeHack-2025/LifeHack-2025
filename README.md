@@ -38,7 +38,7 @@ To browser extension is built specifically for Chromium-based browsers (e.g. Chr
 3. Click "Load unpacked".
 4. Select the `/browser-extension` folder (Ensure that you have cloned this repo locally).
 
-## `/instructions-for-scraping`
+## `/scripts`
 In order to scrape Sustainalytics for future updates,
 
 1. Install dependencies you do not have with:
