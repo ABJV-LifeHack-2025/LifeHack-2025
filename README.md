@@ -38,18 +38,19 @@ To browser extension is built specifically for Chromium-based browsers (e.g. Chr
 3. Click "Load unpacked".
 4. Select the `/browser-extension` folder (Ensure that you have cloned this repo locally).
 
-## `/Instructions-for-scraping`
+## `/instructions-for-scraping`
 In order to scrape Sustainalytics for future updates,
 
-1. install dependencies you do not have with, run :
+1. Install dependencies you do not have with:
 ```sh
 pip install chromedriver_py selenium pandas
 ```
-2. run 
+2. Run: 
 ```sh
+cd /scripts # If not inside directory
 python Sustainalyics_Get_Links.py
 ```
-3. once previous step has finished, run 
+3. Once previous step has finished, run: 
 ```sh
 python Sustainalytics_Link_Scraper
 ```
