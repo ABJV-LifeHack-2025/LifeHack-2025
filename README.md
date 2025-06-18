@@ -41,7 +41,7 @@ To browser extension is built specifically for Chromium-based browsers (e.g. Chr
 ## `/scripts`
 In order to scrape Sustainalytics for future updates,
 
-1. Install dependencies you do not have with:
+1. Install dependencies with:
 ```sh
 pip install chromedriver_py selenium pandas
 ```
