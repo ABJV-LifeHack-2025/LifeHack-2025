@@ -10,13 +10,13 @@ import os
 
 
 
-#Scrapes data from a list of links
+# Scrapes data from a list of links
 def main() -> None:
+    file_path = "sustainalytics_collated.xlsx" # Destination to save scraped company data
+    links_path = "sustainalytics_links.txt"         # Path to scraped links
 
-    fp = "collated_full.xlsx"
-
-    if os.path.exists(fp):
-        df = pd.read_excel(fp)
+    if os.path.exists(file_path):
+        df = pd.read_excel(file_path)
         print(f"Loaded existing file")
     else:
         schema = {
@@ -35,11 +35,11 @@ def main() -> None:
         print("Starting new file.")
 
 
-    with open("links.text", "r") as f:
+    with open(links_path, "r") as f:
         links = [line.strip() for line in f.readlines()]
     
     num_workers = 10
-    start, end = 0, len(links)
+    start, end = 0, len(links) - 1 # both inclusive endpoints
     total = end - start
     chunk_size = total // num_workers
     chunks = [
@@ -48,7 +48,7 @@ def main() -> None:
     ]
 
     all_results = []
-    #Sets up concurrent drivers to scrape chunks of links
+    # Sets up concurrent drivers to scrape chunks of links
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         futures = [executor.submit(open_link_and_scrape, chunk) for chunk in chunks]
         for future in as_completed(futures):
@@ -60,8 +60,10 @@ def main() -> None:
     df["last_updated"] = pd.to_datetime(df["last_updated"], format="mixed", dayfirst=True)
     # Format them back to strings
     df["last_updated"] = df["last_updated"].dt.strftime("%d/%m/%Y")
-    #Saves to excel sheet
-    df.to_excel(fp, sheet_name="data", index=False)
+    # Sort data alphabetically by company name and case-insensitively
+    df.sort_values(by="company_name", key=lambda col: col.str.lower(), inplace=True, ignore_index=True)
+    # Saves to excel sheet
+    df.to_excel(file_path, sheet_name="data", index=False)
 
 def open_link_and_scrape(links):
     # Each process gets a list of links to scrape
@@ -69,7 +71,6 @@ def open_link_and_scrape(links):
     driver = webdriver.Chrome(service=svc)
     results = []
     for link in links:
-        link = link.strip()
         driver.get(link)
         try:
             results.append(get_company_data(driver))
@@ -126,6 +127,7 @@ def get_update_dates(driver):
     except Exception as e:
         print("Error extracting update dates:", e, "at", driver.current_url)
         return "", ""
+
 
 if __name__ == "__main__":
     main()

@@ -41,16 +41,41 @@ To browser extension is built specifically for Chromium-based browsers (e.g. Chr
 ## `/scripts`
 In order to scrape Sustainalytics for future updates,
 
-1. Install dependencies with:
-```sh
-pip install chromedriver_py selenium pandas
-```
-2. Run: 
+1. Create and activate a virtual environment
 ```sh
 cd /scripts # If not inside directory
-python Sustainalyics_Get_Links.py
+python -m venv <your-env-name>
 ```
-3. Once previous step has finished, run: 
+- Activate virtual environment
+    - For Windows:
+    ```sh
+    <your-env-name>\Scripts\activate
+    ```
+    - For macOS/Linux:
+    ```sh
+    source <your-env-name>/bin/activate
+    ```
+2. Install dependencies with:
 ```sh
-python Sustainalytics_Link_Scraper
+pip install -r requirements.txt
 ```
+3. Run links scraper
+```sh
+python scrape_sustainalytics_links.py
+```
+4. Run website scraper
+```sh
+python scrape_sustainalytics.py
+```
+5. To deactivate the environment when you are done, run:
+```sh
+deactivate
+```
+### Configuration (Optional)
+- **scrape_sustainalytics_links.py**
+  - `FILE_PATH`: Path where scraped links will be saved.
+- **scrape_sustainalytics.py**
+  - `LINKS_PATH`: Path to the file from which links will be read.
+  - `FILE_PATH`: Path where the scraped website data will be saved.
+> [!IMPORTANT]
+> Ensure that `LINKS_PATH` matches `FILE_PATH` in `scrape_sustainalytics_links.py` so that the correct links are read to parse company data.
