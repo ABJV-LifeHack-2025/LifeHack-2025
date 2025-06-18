@@ -26,7 +26,6 @@ def main() -> None:
     page_numbers = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "victor-pagination"))).find_elements(By.TAG_NAME, "a")
     #Gets the last page number
     end = int(page_numbers[-1].text)
-    end = 50
     start = 1
     initial = True
     #creates the file to append links to 
